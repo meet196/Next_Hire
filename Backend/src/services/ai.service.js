@@ -49,10 +49,9 @@ async function generateInterviewReport({ resume, selfDescription, jobDescription
             responseSchema: zodToJsonSchema(interviewReportSchema),
         }
     })
-
-    return JSON.parse(response.text)
-
-
+    const parsedResponse = JSON.parse(response.text)
+parsedResponse.title = parsedResponse.title || "Interview Report"
+return parsedResponse
 }
 
 
