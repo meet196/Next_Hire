@@ -33,29 +33,86 @@ const interviewReportSchema = z.object({
 })
 
 async function generateInterviewReport({ resume, selfDescription, jobDescription }) {
+    const prompt = `
+You are a JSON API.
 
+Return ONLY valid JSON.
+Do not return explanation.
+Do not return markdown.
+Do not return candidate summary fields like candidate_name, role_applied_for, recommendation, candidate_score.
 
-    const prompt = `Generate an interview report for a candidate with the following details:
-                        Resume: ${resume}
-                        Self Description: ${selfDescription}
-                        Job Description: ${jobDescription}
+You must return EXACTLY this structure:
+
+{
+  "title": "string",
+  "matchScore": 0,
+  "technicalQuestions": [
+    {
+      "question": "string",
+      "intention": "string",
+      "answer": "string"
+    }
+  ],
+  "behavioralQuestions": [
+    {
+      "question": "string",
+      "intention": "string",
+      "answer": "string"
+    }
+  ],
+  "skillGaps": [
+    {
+      "skill": "string",
+      "severity": "low"
+    }
+  ],
+  "preparationPlan": [
+    {
+      "day": 1,
+      "focus": "string",
+      "tasks": ["string"]
+    }
+  ]
+}
+
+Generate the response using this data:
+
+Resume:
+${resume.slice(0, 3000)}
+
+Self Description:
+${selfDescription.slice(0, 1000)}
+
+Job Description:
+${jobDescription.slice(0, 2000)}
 `
 
     const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: zodToJsonSchema(interviewReportSchema),
-        }
+        contents: prompt
     })
 
-    return JSON.parse(response.text)
+    const rawText =
+        typeof response.text === "function"
+            ? response.text()
+            : response.text
 
+    console.log("RAW:", rawText)
 
+    const parsedResponse = JSON.parse(rawText)
+
+    if (
+        !parsedResponse.title ||
+        !Array.isArray(parsedResponse.technicalQuestions) ||
+        !Array.isArray(parsedResponse.behavioralQuestions) ||
+        !Array.isArray(parsedResponse.skillGaps) ||
+        !Array.isArray(parsedResponse.preparationPlan)
+    ) {
+        throw new Error("AI returned wrong format")
+    }
+
+    return parsedResponse
 }
-
-
 
 async function generatePdfFromHtml(htmlContent) {
     const browser = await puppeteer.launch()
