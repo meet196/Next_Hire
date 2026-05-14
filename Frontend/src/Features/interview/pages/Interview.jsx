@@ -86,7 +86,7 @@ const Interview = () => {
                 <nav className='interview-nav'>
                     <div className="nav-content">
                          <button type="button" onClick={() => navigate(-1)} className="button primary-button">
-                         <ArrowLeft size={18} />Back
+                         <ArrowLeft size={15} />
                          </button>
 
                         <p className='interview-nav__label'>Sections</p>

@@ -23,22 +23,27 @@ const Home = () => {
     }
 
     const handleGenerateReport = async (e) => {
-
     e.preventDefault()
-    const resumeFile = resumeInputRef.current.files[0]
 
-    if (jobDescription.trim().length < 50) {
-        alert("Please enter proper job description")
-        return
+    try {
+        const resumeFile = resumeInputRef.current.files[0]
+
+        if (jobDescription.trim().length < 50) {
+            alert("Please enter proper job description")
+            return
+        }
+
+        if (!resumeFile && selfDescription.trim().length < 30) {
+            alert("Please upload resume or write proper self description")
+            return
+        }
+
+        const data = await generateReport({ jobDescription, selfDescription, resumeFile })
+        navigate(`/interview/${data._id}`)
+
+    } catch (error) {
+        alert(error.response?.data?.message || "Something went wrong")
     }
-
-    if (!resumeFile && selfDescription.trim().length < 30) {
-        alert("Please upload resume or write proper self description")
-        return
-    }
-
-    const data = await generateReport({ jobDescription, selfDescription, resumeFile })
-    navigate(`/interview/${data._id}`)
 }
     if (loading) {
         return (
@@ -107,7 +112,7 @@ const Home = () => {
                                {resumeMessage && (<button type="button" onClick={() => resumeInputRef.current.click()}className="replace-pdf-btn"> 
                                 Replace PDF</button>)}
 
-                                <input ref={resumeInputRef} hidden type='file' id='resume' name='resume' accept='.pdf,.docx' onChange={handleResumeChange} />
+                                <input ref={resumeInputRef} hidden type='file' id='resume' name='resume' accept='.pdf' onChange={handleResumeChange} />
                             </label>
                         </div>
 
@@ -140,6 +145,7 @@ const Home = () => {
                 <div className='interview-card__footer'>
                     <span className='footer-info'>AI-Powered Strategy Generation &bull; Approx 30s</span>
                     <button
+                        type='button'
                         onClick={handleGenerateReport}
                         className='generate-btn'>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" /></svg>
