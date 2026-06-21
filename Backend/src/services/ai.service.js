@@ -115,28 +115,24 @@ async function generatePdfFromHtml(htmlContent) {
 
 async function generateResumePdf({ resume, selfDescription, jobDescription }) {
     
-    // 1. The System Prompt: This forces Groq to act like a Senior Recruiter and format the HTML perfectly.
-    const systemPrompt = `You are an Expert Tech Recruiter, ATS Specialist, and HTML/CSS Designer.
-    Your task is to generate a highly professional, ATS-friendly resume in HTML format.
+    const systemPrompt = `You are an Expert Tech Recruiter, ATS Specialist, and Premium HTML/CSS Designer.
+    Your task is to generate a 10/10 industry-standard, ATS-optimized resume in HTML format.
 
-    CRITICAL RULES FOR CONTENT (To match elite industry standards):
-    1. QUANTIFY IMPACT: Do not just list duties. Enhance the bullet points with believable, industry-standard metrics where appropriate (e.g., "improving API response times by 30%", "reducing runtime errors"[cite: 2]).
-    2. TECHNICAL DEPTH: Expand simple terms based on the Job Description. If they know MongoDB, use advanced terms like "advanced aggregation pipelines and strategic indexing"[cite: 2].
-    3. CRISP STRUCTURE: Organize strictly into: Professional Summary, Technical Skills (categorized into Languages, Frontend, Backend, Database, Tools & DevOps)[cite: 2], Professional Experience, Projects, and Education.
-    4. ACTION VERBS: Start every bullet point with strong verbs like "Architected", "Implemented", "Designed", or "Collaborated"[cite: 2].
-    5. HUMAN TONE: Make it sound written by a senior professional, not an AI. 
+    CRITICAL CONTENT RULES:
+    1. If the input data has no resume or missing details, use the Self Description and Job Description to build a complete resume from scratch.
+    2. Eliminate any AI placeholders like "Although not explicitly mentioned" or logical contradictions (like stating 3+ years experience but calling oneself a fresher). Fix them to align with a professional senior developer profile.
+    3. Use powerful action verbs (e.g., "Architected", "Optimized", "Designed") and quantifiable metrics (e.g., "improving API response times by 30%").
+    4. Categorize Technical Skills clearly: Languages, Frontend, Backend, Database, Tools & DevOps.
 
-    CRITICAL RULES FOR DESIGN & HTML:
-    1. Return ONLY a valid JSON object with a single field "html" containing the raw HTML code.
-    2. Use inline CSS or a <style> block within the HTML. The design must be clean, modern, and professional.
-    3. Use a single accent color (like dark navy blue #1E3A8A or dark teal) for headers and dividers.
-    4. Ensure it fits well within 1-2 A4 pages. Use clear visual hierarchy, proper spacing, and standard ATS-friendly fonts (e.g., Arial, Helvetica, sans-serif).
-    5. Ensure the HTML is fully complete and ready to be parsed by Puppeteer.`;
+    CRITICAL DESIGN & PRINT RULES:
+    1. Return ONLY a valid JSON object with a single field "html". No markdown blocks or extra text.
+    2. The HTML must use a clean, executive look with strict A4 dimensions (@page { size: A4; margin: 0; } and page dimensions 210mm x 297mm).
+    3. Use a single professional accent color (like deep navy blue #1e3a8a) for section headers and lines. Use premium charcoal colors (#0f172a, #334155) for text to look like a premium Canva or LinkedIn template.
+    4. Ensure the visual hierarchy is perfectly spaced so it prints on a single, clean page without breaking.`;
 
-    // 2. The User Prompt: This only contains the dynamic data.
-    const userPrompt = `Please generate the ATS-optimized HTML resume based on the following details. Tailor the content heavily towards the Job Description.
-
-    Resume: ${resume}
+    const userPrompt = `Generate a competitive selection-based resume using this data. Tailor it exactly for the target Job Description:
+    
+    Resume: ${resume || "Not provided - generate entirely from details below"}
     Self Description: ${selfDescription}
     Job Description: ${jobDescription}`;
 
@@ -147,19 +143,16 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
             { role: "user", content: userPrompt }
         ],
         response_format: { type: "json_object" },
-        // IMPORTANT: Lower temperature makes the model more analytical and less "creative/hallucinatory", which is better for resumes.
-        temperature: 0.25 
+        temperature: 0.22 // Output configuration lock
     });
 
     const jsonContent = JSON.parse(response.choices[0].message.content);
 
     if (!jsonContent.html) {
-        throw new Error("AI did not return the 'html' field in JSON.");
+        throw new Error("Groq API error: HTML field missing in response.");
     }
 
     const pdfBuffer = await generatePdfFromHtml(jsonContent.html);
-
     return pdfBuffer;
 }
-
 module.exports = { generateInterviewReport, generateResumePdf }
