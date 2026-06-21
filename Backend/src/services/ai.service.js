@@ -120,15 +120,15 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
 
     CRITICAL CONTENT RULES:
     1. If the input data has no resume or missing details, use the Self Description and Job Description to build a complete resume from scratch.
-    2. Eliminate any AI placeholders like "Although not explicitly mentioned" or logical contradictions (like stating 3+ years experience but calling oneself a fresher). Fix them to align with a professional senior developer profile.
-    3. Use powerful action verbs (e.g., "Architected", "Optimized", "Designed") and quantifiable metrics (e.g., "improving API response times by 30%").
-    4. Categorize Technical Skills clearly: Languages, Frontend, Backend, Database, Tools & DevOps.
+    2. Eliminate any AI placeholders like "Although not explicitly mentioned" or logical contradictions. Fix them to align with a professional senior developer profile.
+    3. Use powerful action verbs (e.g., "Architected", "Optimized", "Designed") and quantifiable metrics.
 
-    CRITICAL DESIGN & PRINT RULES:
-    1. Return ONLY a valid JSON object with a single field "html". No markdown blocks or extra text.
-    2. The HTML must use a clean, executive look with strict A4 dimensions (@page { size: A4; margin: 0; } and page dimensions 210mm x 297mm).
-    3. Use a single professional accent color (like deep navy blue #1e3a8a) for section headers and lines. Use premium charcoal colors (#0f172a, #334155) for text to look like a premium Canva or LinkedIn template.
-    4. Ensure the visual hierarchy is perfectly spaced so it prints on a single, clean page without breaking.`;
+    CRITICAL DESIGN & JSON FORMATTING RULES:
+    1. Return ONLY a valid JSON object with a single field "html".
+    2. CRITICAL ERROR PREVENTION: The value of the "html" key must be a plain, standard JSON string wrapper. NEVER use triple quotes like \"\"\" or backticks (\`\`\`) inside or around the HTML content. Escape double quotes as \\" where needed inside the HTML string.
+    3. The HTML must use a clean, executive look with strict A4 dimensions (@page { size: A4; margin: 0; } and page dimensions 210mm x 297mm).
+    4. Use a single professional accent color (like deep navy blue #1e3a8a) for section headers and lines. Use premium charcoal colors (#0f172a, #334155) for text.
+    5. Ensure the visual hierarchy is perfectly spaced so it prints on a single, clean page without breaking.`;
 
     const userPrompt = `Generate a competitive selection-based resume using this data. Tailor it exactly for the target Job Description:
     
@@ -143,7 +143,8 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
             { role: "user", content: userPrompt }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.22 // Output configuration lock
+        // Temperature thoda sa low kiya hai taaki strict formatting follow ho aur creativity ke chakkar me JSON na toote
+        temperature: 0.15 
     });
 
     const jsonContent = JSON.parse(response.choices[0].message.content);
@@ -153,6 +154,8 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
     }
 
     const pdfBuffer = await generatePdfFromHtml(jsonContent.html);
+ 
     return pdfBuffer;
+    
 }
 module.exports = { generateInterviewReport, generateResumePdf }
