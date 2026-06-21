@@ -15,6 +15,7 @@ Do not return explanation.
 Do not return markdown.
 Do not return candidate summary fields like candidate_name, role_applied_for, recommendation, candidate_score.
 Generate EXACTLY 5 technical questions and EXACTLY 5 behavioral questions. Do not generate fewer than 5 in each section.
+Generate a preparation plan covering EXACTLY 7 days. Do not generate fewer than 7 days in the preparationPlan array.
 
 You must return EXACTLY this structure:
 
