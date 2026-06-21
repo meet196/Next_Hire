@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import '../style/interview.scss'
-import { useInterview } from '../hooks/useInterview.js'
+import { useInterview } from '../hooks/userinterview'
 import { useNavigate, useParams } from 'react-router'
 import { ArrowLeft } from "lucide-react"
 
@@ -85,8 +85,8 @@ const Interview = () => {
                 {/* ── Left Nav ── */}
                 <nav className='interview-nav'>
                     <div className="nav-content">
-                         <button type="button" onClick={() => navigate(-1)} className="button primary-button">
-                         <ArrowLeft size={15} />
+                         <button type="button" onClick={() => navigate(-1)} className="round-back-btn">
+                         <ArrowLeft size={18} />
                          </button>
 
                         <p className='interview-nav__label'>Sections</p>
