@@ -17,6 +17,7 @@ Do not return markdown.
 Do not return candidate summary fields like candidate_name, role_applied_for, recommendation, candidate_score.
 Generate EXACTLY 5 technical questions and EXACTLY 5 behavioral questions. Do not generate fewer than 5 in each section.
 Generate a preparation plan covering EXACTLY 7 days. Do not generate fewer than 7 days in the preparationPlan array.
+Use a clean, modern, professional design with a single accent color (like navy blue or dark teal) for headings and section dividers. Use proper spacing, a clear visual hierarchy, and avoid cluttered or overly colorful styling. The layout should look like a premium resume template, similar to ones used on LinkedIn or Canva.
 
 You must return EXACTLY this structure:
 
