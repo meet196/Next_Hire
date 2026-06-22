@@ -3,6 +3,7 @@ import '../style/interview.scss'
 import { useInterview } from '../hooks/userinterview'
 import { useNavigate, useParams } from 'react-router'
 import { ArrowLeft } from "lucide-react"
+import { useAuth } from '../../auth/hooks/useAuth'
 
 const NAV_ITEMS = [
     { id: 'technical', label: 'Technical Questions', icon: (<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>) },
@@ -61,6 +62,7 @@ const Interview = () => {
     const { report, getReportById, loading, getResumePdf } = useInterview()
     const { interviewId } = useParams()
     const navigate = useNavigate()
+    const { handleLogout } = useAuth()
 
     useEffect(() => {
     getReportById(interviewId)
@@ -88,6 +90,10 @@ const Interview = () => {
                          <button type="button" onClick={() => navigate(-1)} className="round-back-btn">
                          <ArrowLeft size={18} />
                          </button>
+
+                <button type="button" onClick={async () => { await handleLogout(); navigate('/login') }}
+                 style={{ marginTop: '8px', marginBottom: '8px', padding: '8px 12px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', width: '100%' }}>
+                 Logout</button>
 
                         <p className='interview-nav__label'>Sections</p>
                         {NAV_ITEMS.map(item => (

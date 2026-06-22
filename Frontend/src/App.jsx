@@ -6,6 +6,7 @@ import { InterviewProvider } from "./Features/interview/interview.context.jsx";
 function App() {
     return(
         <AuthProvider>
+            <Toaster position="top-center" />
             <InterviewProvider>
                 <RouterProvider router={router} />
             </InterviewProvider>

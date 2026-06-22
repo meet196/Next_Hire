@@ -1,6 +1,7 @@
 const express = require("express")
 const cookieParser = require("cookie-parser")
 const cors =require('cors')
+import { Toaster } from "react-hot-toast";
 
 const app = express()
 

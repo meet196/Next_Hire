@@ -1,7 +1,7 @@
 import { useContext, useEffect } from "react";
 import { AuthContext } from "../auth.context";
 import { login, register, logout, getMe } from "../services/auth.api";
-
+import toast from "react-hot-toast"
 
 
 export const useAuth = () => {
@@ -11,40 +11,43 @@ export const useAuth = () => {
 
 
     const handleLogin = async ({ email, password }) => {
-        setLoading(true)
-        try {
-            const data = await login({ email, password })
-            setUser(data.user)
-        } catch (err) {
-
-        } finally {
-            setLoading(false)
-        }
+    setLoading(true)
+    try {
+        const data = await login({ email, password })
+        setUser(data.user)
+        toast.success("Logged in successfully!")
+    } catch (err) {
+        toast.error(err.response?.data?.message || "Invalid email or password")
+    } finally {
+        setLoading(false)
     }
+}
 
-    const handleRegister = async ({ username, email, password }) => {
-        setLoading(true)
-        try {
-            const data = await register({ username, email, password })
-            setUser(data.user)
-        } catch (err) {
-
-        } finally {
-            setLoading(false)
-        }
+const handleRegister = async ({ username, email, password }) => {
+    setLoading(true)
+    try {
+        const data = await register({ username, email, password })
+        setUser(data.user)
+        toast.success("Account created successfully!")
+    } catch (err) {
+        toast.error(err.response?.data?.message || "Registration failed")
+    } finally {
+        setLoading(false)
     }
+}
 
-    const handleLogout = async () => {
-        setLoading(true)
-        try {
-            const data = await logout()
-            setUser(null)
-        } catch (err) {
-
-        } finally {
-            setLoading(false)
-        }
+const handleLogout = async () => {
+    setLoading(true)
+    try {
+        await logout()
+        setUser(null)
+        toast.success("Logged out successfully!")
+    } catch (err) {
+        toast.error("Logout failed")
+    } finally {
+        setLoading(false)
     }
+}
 
     useEffect(() => {
 
