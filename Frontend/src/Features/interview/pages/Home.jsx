@@ -61,11 +61,11 @@ const Home = () => {
             {/* Page Header */}
            <header className='page-header'>
            <button type='button'onClick={async () => { await handleLogout(); navigate('/login') }}
-           style={{ float: 'right', padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
+           style={{position: 'fixed',top: '50px',right: '20px',zIndex: 900,padding: '12px 16px',background: '#ef4444',color: 'white',border: 'none',borderRadius: '8px',cursor: 'pointer'}}>
            Logout</button>
            <h1>Create Your Custom <span className='highlight'>Interview Plan</span></h1>
            <p>Let our AI analyze the job requirements and your unique profile to build a winning strategy.</p>
-           </header>
+        </header>
 
             {/* Main Card */}
             <div className='interview-card'>
