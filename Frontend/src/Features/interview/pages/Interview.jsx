@@ -92,7 +92,7 @@ const Interview = () => {
                          </button>
 
                 <button type="button" onClick={async () => { await handleLogout(); navigate('/login') }}
-                 style={{position: 'fixed',top: '50px',right: '20px',zIndex: 900,padding: '12px 16px',background: '#ef4444',color: 'white',border: 'none',borderRadius: '8px',cursor: 'pointer'}}>
+                 style={{position:'absolute',top: '50px',right: '20px',zIndex: 900,padding: '12px 16px',background: '#ef4444',color: 'white',border: 'none',borderRadius: '8px',cursor: 'pointer'}}>
                  Logout</button>
 
                         <p className='interview-nav__label'>Sections</p>
