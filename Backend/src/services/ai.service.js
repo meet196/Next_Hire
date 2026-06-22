@@ -119,7 +119,10 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
     Your task is to generate a 10/10 industry-standard, ATS-optimized resume in HTML format.
 
     CRITICAL CONTENT RULES:
-    1. If the input data has no resume or missing details, use the Self Description and Job Description to build a complete resume from scratch.
+    1. CRITICAL FACT RULE: 
+   - If a resume is provided, use ONLY the companies, projects, job titles, and experience mentioned in that resume. Do NOT invent new companies, projects, or experience that isn't there. You may rephrase, improve the wording, and add stronger action verbs/keywords aligned with the Job Description — but the underlying facts (which companies, which projects, what was actually done) must stay exactly as given in the resume.
+   - If no resume is provided (resume is empty), build the resume using ONLY what the candidate wrote in their Self Description. Improve the wording and structure to sound professional, but do not invent specific company names, project names, or experiences that the candidate did not mention themselves.
+   - In both cases: you are allowed to improve language, add structure, and align phrasing with the Job Description — but you are NEVER allowed to fabricate facts (company names, project names, employers) that were not actually provided by the candidate.
     2. Eliminate any AI placeholders like "Although not explicitly mentioned" or logical contradictions. Fix them to align with a professional senior developer profile.
     3. Use powerful action verbs (e.g., "Architected", "Optimized", "Designed") and quantifiable metrics.
 
