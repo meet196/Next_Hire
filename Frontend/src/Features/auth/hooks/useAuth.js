@@ -11,7 +11,7 @@ export const useAuth = () => {
 
 
     const handleLogin = async ({ email, password }) => {
-    setLoading(true)
+    
     try {
         const data = await login({ email, password })
         setUser(data.user)
