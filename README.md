@@ -1,4 +1,5 @@
-# NextHire — AI Interview Preparation Platform
+# Next Hire - AI-Powered Interview Preparation Platform
+Next Hire is a full-stack AI-powered interview preparation web application built with the MERN stack. It allows users to upload resumes, analyze job descriptions, generate AI-based interview reports, identify skill gaps, receive personalized preparation plans, and create tailored resumes for specific job roles. 
 <img width="1755" height="776" alt="Screenshot 2026-06-01 144245" src="https://github.com/user-attachments/assets/763fedf3-c1e6-416a-bea2-5ef4eedbee7a" />
 <img width="1709" height="753" alt="Screenshot 2026-06-01 144256" src="https://github.com/user-attachments/assets/e89322c9-e0fc-4fb3-bae7-7be28b434d5a" />
 
