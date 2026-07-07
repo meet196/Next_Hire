@@ -9,13 +9,12 @@ export const useAuth = () => {
     const context = useContext(AuthContext)
     const { user, setUser, loading, setLoading } = context
 
-
-    const handleLogin = async ({ email, password }) => {
-    
+const handleLogin = async ({ email, password }) => {
     try {
         const data = await login({ email, password })
         setUser(data.user)
         toast.success("Logged in successfully!")
+        return data.user
     } catch (err) {
         toast.error(err.response?.data?.message || "Invalid email or password")
     } finally {

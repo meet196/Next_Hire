@@ -31,24 +31,25 @@ async function registerUserController(req, res) {
     })
 
     const token = jwt.sign(
-        { id: user._id, username: user.username },
-        process.env.JWT_SECRET,
-        { expiresIn: "1d" }
-    )
+    { id: user._id, username: user.username, role: user.role },   // role added
+    process.env.JWT_SECRET,
+    { expiresIn: "1d" }
+)
 
     res.cookie("token", token, {
     httpOnly: true,
     secure: true,
     sameSite: "None"
-    })
+})
     res.status(201).json({
-        message: "User registered successfully",
-        user: {
-            id: user._id,
-            username: user.username,
-            email: user.email
-        }
-    })
+    message: "User registered successfully",
+    user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role          // response me bhi bhejo
+    }
+})
     
 }
 async function loginUserController(req, res) {
@@ -70,23 +71,23 @@ async function loginUserController(req, res) {
     }
 
     const token = jwt.sign(
-    { id: user._id,
-     username: user.username },
+    { id: user._id, username: user.username, role: user.role },   // role added
     process.env.JWT_SECRET,
     { expiresIn: "1d" }
-    )
+)
 
-    res.cookie("token", token, {
+res.cookie("token", token, {
     httpOnly: true,
     secure: true,
     sameSite: "None"
-    })
-    res.status(200).json({
+})
+res.status(200).json({
     message: "User loggedIn successfully.",
     user: {
         id: user._id,
         username: user.username,
-        email: user.email
+        email: user.email,
+        role: user.role          // response me bhi bhejo
     }
 })
 }
@@ -115,7 +116,8 @@ async function getMeController(req, res) {
         user: {
             id: user._id,
             username: user.username,
-            email: user.email
+            email: user.email,
+            role: user.role      // ye add karo
         }
     })
 
