@@ -62,7 +62,7 @@ const Interview = () => {
     const { report, getReportById, loading, getResumePdf } = useInterview()
     const { interviewId } = useParams()
     const navigate = useNavigate()
-    const { handleLogout } = useAuth()
+    useAuth()
 
     useEffect(() => {
     getReportById(interviewId)
@@ -90,10 +90,6 @@ const Interview = () => {
                          <button type="button" onClick={() => navigate(-1)} className="round-back-btn">
                          <ArrowLeft size={18} />
                          </button>
-
-                <button type="button" onClick={async () => { await handleLogout(); navigate('/login') }}
-                 style={{position:'absolute',top: '50px',right: '20px',zIndex: 900,padding: '12px 16px',background: '#ef4444',color: 'white',border: 'none',borderRadius: '8px',cursor: 'pointer'}}>
-                 Logout</button>
 
                         <p className='interview-nav__label'>Sections</p>
                         {NAV_ITEMS.map(item => (

@@ -1,7 +1,6 @@
 const Groq = require("groq-sdk")
 const { z } = require("zod")
-const chromium = require("@sparticuz/chromium")
-const puppeteer = require("puppeteer-core")
+const puppeteer = require("puppeteer")
 
 const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY
@@ -9,17 +8,37 @@ const groq = new Groq({
 
 async function generateInterviewReport({ resume, selfDescription, jobDescription }) {
     const prompt = `
-You are a JSON API.
+You are an expert ATS Resume Analyzer and Technical Recruiter.
 
 Return ONLY valid JSON.
-Do not return explanation.
 Do not return markdown.
-Do not return candidate summary fields like candidate_name, role_applied_for, recommendation, candidate_score.
-Generate EXACTLY 5 technical questions and EXACTLY 5 behavioral questions. Do not generate fewer than 5 in each section.
-Generate a preparation plan covering EXACTLY 7 days. Do not generate fewer than 7 days in the preparationPlan array.
-Use a clean, modern, professional design with a single accent color (like navy blue or dark teal) for headings and section dividers. Use proper spacing, a clear visual hierarchy, and avoid cluttered or overly colorful styling. The layout should look like a premium resume template, similar to ones used on LinkedIn or Canva.
+Do not return explanations.
 
-You must return EXACTLY this structure:
+IMPORTANT SCORING RULES:
+
+1. Calculate the match score ONLY from the ORIGINAL resume and self description.
+2. NEVER assume experience, projects, internships, achievements, or skills that are not explicitly mentioned.
+3. NEVER give credit for technologies that are missing from the resume.
+4. Missing required skills MUST reduce the score.
+5. Do NOT increase the score because you can rewrite the resume professionally.
+6. Be strict and realistic like a real recruiter.
+
+Scoring Guidelines:
+90-100 = Candidate satisfies almost every required skill and has relevant experience.
+75-89 = Candidate satisfies most required skills with only a few missing.
+60-74 = Candidate satisfies some important skills but has several missing requirements.
+40-59 = Candidate has basic knowledge but lacks many required skills.
+0-39 = Candidate is not suitable for this role.
+
+While calculating the score, consider:
+- Required technical skills
+- Relevant projects
+- Relevant experience
+- Education
+- Resume completeness
+- Alignment with the job description
+
+Return EXACTLY this JSON:
 
 {
   "title": "string",
@@ -64,7 +83,6 @@ ${selfDescription.slice(0, 1000)}
 Job Description:
 ${jobDescription.slice(0, 2000)}
 `
-
     const response = await groq.chat.completions.create({
         model: "llama-3.3-70b-versatile",
         messages: [{ role: "user", content: prompt }],
@@ -92,25 +110,28 @@ ${jobDescription.slice(0, 2000)}
 
 async function generatePdfFromHtml(htmlContent) {
     const browser = await puppeteer.launch({
-        args: chromium.args,
-        executablePath: await chromium.executablePath(),
-        headless: chromium.headless,
-    })
+        headless: true,
+    });
+
     const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: "networkidle0" })
+
+    await page.setContent(htmlContent, {
+        waitUntil: "networkidle0",
+    });
 
     const pdfBuffer = await page.pdf({
-        format: "A4", margin: {
+        format: "A4",
+        margin: {
             top: "20mm",
             bottom: "20mm",
             left: "15mm",
-            right: "15mm"
-        }
-    })
+            right: "15mm",
+        },
+    });
 
-    await browser.close()
+    await browser.close();
 
-    return pdfBuffer
+    return pdfBuffer;
 }
 
 async function generateResumePdf({ resume, selfDescription, jobDescription }) {
