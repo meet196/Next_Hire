@@ -1,4 +1,5 @@
 import React,{useState} from 'react'
+import { User, Mail, Lock } from 'lucide-react'
 import { useNavigate, Link } from 'react-router'
 import { useAuth } from '../hooks/useAuth'
 
@@ -33,18 +34,21 @@ const Register = () => {
                         <input
                             onChange={(e) => { setUsername(e.target.value) }}
                             type="text" id="username" name='username' placeholder='Enter username' />
+                            <User size={18} className="input-icon" />
                     </div>
                     <div className="input-group">
                         <label htmlFor="email">Email</label>
                         <input
                             onChange={(e) => { setEmail(e.target.value) }}
                             type="email" id="email" name='email' placeholder='Enter email address' />
+                            <Mail size={18} className="input-icon" />
                     </div>
                     <div className="input-group">
                         <label htmlFor="password">Password</label>
                         <input
                             onChange={(e) => { setPassword(e.target.value) }}
                             type="password" id="password" name='password' placeholder='Enter password' />
+                            <Lock size={18} className="input-icon" />
                     </div>
 
                     <button className='button primary-button' >Register</button>

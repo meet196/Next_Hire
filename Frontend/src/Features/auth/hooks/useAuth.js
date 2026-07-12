@@ -13,7 +13,7 @@ const handleLogin = async ({ email, password }) => {
     try {
         const data = await login({ email, password })
         setUser(data.user)
-        toast.success("Logged in successfully!")
+        toast.success("Login successfully!")
         return data.user
     } catch (err) {
         toast.error(err.response?.data?.message || "Invalid email or password")
@@ -40,7 +40,7 @@ const handleLogout = async () => {
     try {
         await logout()
         setUser(null)
-        toast.success("Logged out successfully!")
+        toast.success("Logout successfully!")
     } catch (err) {
         toast.error("Logout failed")
     } finally {

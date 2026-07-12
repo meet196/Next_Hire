@@ -1,4 +1,5 @@
 import React,{useState} from 'react'
+import { Mail,Lock } from 'lucide-react';
 import { useNavigate, Link } from 'react-router'
 import "../auth.form.scss"
 import { useAuth } from '../hooks/useAuth'
@@ -38,12 +39,14 @@ const Login = () => {
                         <input
                             onChange={(e) => { setEmail(e.target.value) }}
                             type="email" id="email" name='email' placeholder='Enter email address' />
+                            <Mail size={18} className="input-icon" />
                     </div>
                     <div className="input-group">
                         <label htmlFor="password">Password</label>
                         <input
                             onChange={(e) => { setPassword(e.target.value) }}
                             type="password" id="password" name='password' placeholder='Enter password' />
+                            <Lock size={18} className="input-icon" />
                     </div>
                     <button className='button primary-button' >Login</button>
                 </form>

@@ -20,3 +20,11 @@ body,
 .highlight{
     color: #d20d3b;
 }
+
+button {
+    transition: transform 0.15s ease;
+
+    &:active {
+        transform: scale(0.9);
+    }
+}
