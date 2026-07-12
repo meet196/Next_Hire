@@ -6,6 +6,50 @@ const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY
 })
 
+// Schema the AI's JSON response MUST match. If Groq returns something
+// malformed (wrong types, missing fields, invalid severity, etc.) this
+// will throw instead of letting bad data reach the database.
+const interviewReportSchema = z.object({
+    title: z.string(),
+    matchScore: z.number().min(0).max(100),
+    // --- NEW: makes the match score auditable instead of a black-box number.
+    // requiredSkills = what the JD actually asks for.
+    // matchedSkills  = subset of requiredSkills the resume/self-description evidences.
+    // skillGaps (below) = the rest of requiredSkills that are missing/weak.
+    // matchScore must now be internally consistent with these two lists.
+    requiredSkills: z.array(z.string()).max(12),
+    matchedSkills: z.array(z.string()),
+    technicalQuestions: z.array(z.object({
+        question: z.string(),
+        intention: z.string(),
+        answer: z.string()
+    })),
+    behavioralQuestions: z.array(z.object({
+        question: z.string(),
+        intention: z.string(),
+        answer: z.string()
+    })),
+    // --- IMPROVED skillGaps ---
+    // "reason" forces the model to justify each gap against the actual resume
+    // instead of guessing, and "recommendation" makes each gap actionable
+    // instead of just a label.
+    skillGaps: z.array(z.object({
+        skill: z.string(),
+        severity: z.enum([ "low", "medium", "high" ]),
+        reason: z.string(),
+        recommendation: z.string()
+    })).max(8),
+    // --- IMPROVED preparationPlan (the "roadmap") ---
+    // "targetSkill" ties every day to a real gap instead of generic advice,
+    // so the roadmap is actually personalized to this candidate + this job.
+    preparationPlan: z.array(z.object({
+        day: z.number(),
+        focus: z.string(),
+        targetSkill: z.string(),
+        tasks: z.array(z.string())
+    }))
+})
+
 async function generateInterviewReport({ resume, selfDescription, jobDescription }) {
     const prompt = `
 You are an expert ATS Resume Analyzer and Technical Recruiter.
@@ -38,11 +82,45 @@ While calculating the score, consider:
 - Resume completeness
 - Alignment with the job description
 
-Return EXACTLY this JSON:
+STEP 1 — REQUIRED VS MATCHED SKILLS (do this before anything else, it drives every other field):
+1. Read the Job Description and extract the 8-12 most important required skills/tools/technologies → this is "requiredSkills".
+2. For each item in requiredSkills, check the Resume and Self Description. If it is clearly evidenced there, add it to "matchedSkills". If it is missing or only weakly implied, it does NOT go in matchedSkills — it becomes a skillGaps entry instead (see SKILL GAP RULES below).
+3. matchScore MUST be consistent with these two lists: a high ratio of matchedSkills to requiredSkills, plus few/low-severity skillGaps, means a high score. A low ratio, or several high-severity skillGaps, means a low score. Never output a matchScore that contradicts your own requiredSkills/matchedSkills/skillGaps.
+
+QUESTION TYPE RULES (do not let these two categories bleed into each other):
+- technicalQuestions test hands-on knowledge of a specific tool, technology, or concept from requiredSkills or the resume's stack — e.g. "How would you debug a memory leak in a Node.js service?" These must NOT be about past personal experience, teamwork, or soft skills.
+- behavioralQuestions are situational/STAR-style, about how the candidate has acted or would act — conflict, deadlines, failure, collaboration, ownership — e.g. "Tell me about a time a project's scope changed midway. How did you handle it?" These must NOT test a specific technical tool or syntax.
+- Every question must clearly belong to only one of the two categories.
+
+Generate EXACTLY 5 technicalQuestions and EXACTLY 5 behavioralQuestions.
+
+PREPARATION PLAN RULES (this is the candidate's roadmap — make it personal, not generic):
+1. Generate a preparationPlan with EXACTLY 5 days, numbered 1 to 5 in order.
+2. Each day's "focus" and "targetSkill" MUST target a real skillGaps entry, prioritizing high severity gaps in the earlier days.
+3. If there are fewer than 5 skillGaps, use the remaining days to deepen the candidate's weakest matchedSkills relative to the Job Description, or add a mock-interview/revision day — set "targetSkill" to that skill or to "Mock Interview Practice" accordingly. Never leave a day with generic filler unrelated to requiredSkills.
+4. "tasks" must be specific and doable in one day (e.g. "Build a small REST API with pagination and JWT auth"), not vague advice like "study more".
+
+SKILL GAP RULES (skillGaps field — follow this strictly):
+1. First extract the required skills, tools, and technologies explicitly mentioned in the Job Description.
+2. Compare each one, one by one, against what is explicitly present in the Resume and Self Description.
+3. Only include a skill in "skillGaps" if it is REQUIRED by the Job Description AND is missing, weak, or not clearly evidenced in the Resume/Self Description.
+4. Do NOT include a skill the candidate already clearly demonstrates — that should count toward matchScore instead, not appear as a gap.
+5. For each skillGaps entry:
+   - "skill": the exact skill/technology name as it appears in the Job Description.
+   - "severity": "high" if it is a core/critical requirement for the role, "medium" if important but secondary, "low" if it's a nice-to-have.
+   - "reason": one short sentence, grounded in the actual resume/self description, explaining why this is a gap (e.g. what is missing or only partially shown). Never invent resume content while writing this.
+   - "recommendation": one concrete, actionable next step to close this gap (a specific project idea, certification, or practice focus — not generic advice like "learn more about X").
+6. Order skillGaps from highest severity to lowest.
+7. Include at most 8 skillGaps — pick the most impactful ones for this specific job description, not every minor missing tool.
+8. If the candidate genuinely meets almost every required skill, skillGaps may contain very few entries (even zero) — do not invent gaps just to fill the list.
+
+Return EXACTLY this JSON shape (types must match, no extra fields, no missing fields):
 
 {
   "title": "string",
   "matchScore": 0,
+  "requiredSkills": ["string"],
+  "matchedSkills": ["string"],
   "technicalQuestions": [
     {
       "question": "string",
@@ -60,13 +138,16 @@ Return EXACTLY this JSON:
   "skillGaps": [
     {
       "skill": "string",
-      "severity": "low"
+      "severity": "low",
+      "reason": "string",
+      "recommendation": "string"
     }
   ],
   "preparationPlan": [
     {
       "day": 1,
       "focus": "string",
+      "targetSkill": "string",
       "tasks": ["string"]
     }
   ]
@@ -86,7 +167,11 @@ ${jobDescription.slice(0, 2000)}
     const response = await groq.chat.completions.create({
         model: "llama-3.3-70b-versatile",
         messages: [{ role: "user", content: prompt }],
-        response_format: { type: "json_object" }
+        response_format: { type: "json_object" },
+        // Low temperature + fixed seed so the same resume/JD pair gives the
+        // same matchScore every time, instead of a different number each run.
+        temperature: 0.1,
+        seed: 42
     })
 
     const rawText = response.choices[0].message.content
@@ -95,17 +180,14 @@ ${jobDescription.slice(0, 2000)}
 
     const parsedResponse = JSON.parse(rawText)
 
-    if (
-        !parsedResponse.title ||
-        !Array.isArray(parsedResponse.technicalQuestions) ||
-        !Array.isArray(parsedResponse.behavioralQuestions) ||
-        !Array.isArray(parsedResponse.skillGaps) ||
-        !Array.isArray(parsedResponse.preparationPlan)
-    ) {
-        throw new Error("AI returned wrong format")
+    // Throws a clear error naming exactly which field is wrong, instead of
+    // silently saving broken/inconsistent data to MongoDB.
+    try {
+        return interviewReportSchema.parse(parsedResponse)
+    } catch (validationError) {
+        console.error("AI response failed schema validation:", validationError.issues)
+        throw new Error("AI returned an incorrectly formatted report. Please try generating again.")
     }
-
-    return parsedResponse
 }
 
 async function generatePdfFromHtml(htmlContent) {
@@ -121,12 +203,7 @@ async function generatePdfFromHtml(htmlContent) {
 
     const pdfBuffer = await page.pdf({
         format: "A4",
-        margin: {
-            top: "20mm",
-            bottom: "20mm",
-            left: "15mm",
-            right: "15mm",
-        },
+        printBackground: true,
     });
 
     await browser.close();
@@ -135,7 +212,7 @@ async function generatePdfFromHtml(htmlContent) {
 }
 
 async function generateResumePdf({ resume, selfDescription, jobDescription }) {
-    
+
     const systemPrompt = `You are an Expert Tech Recruiter, ATS Specialist, and Premium HTML/CSS Designer.
     Your task is to generate a 10/10 industry-standard, ATS-optimized resume in HTML format.
 
@@ -146,13 +223,26 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
    - In both cases: you are allowed to improve language, add structure, and align phrasing with the Job Description — but you are NEVER allowed to fabricate facts (company names, project names, employers) that were not actually provided by the candidate.
     2. Eliminate any AI placeholders like "Although not explicitly mentioned" or logical contradictions. Fix them to align with a professional senior developer profile.
     3. Use powerful action verbs (e.g., "Architected", "Optimized", "Designed") and quantifiable metrics.
+    4. KEYWORD OPTIMIZATION (this is the main ATS-matching step, do not skip it):
+   - First, extract the 10-15 most important skills, tools, technologies, and role-specific terms from the Job Description (e.g. "React.js", "REST APIs", "cross-browser compatibility", "responsive design", "Agile").
+   - For every one of those keywords the candidate genuinely has evidence of (in their resume or self description), make sure that EXACT keyword phrase appears somewhere in the output — in the Skills list, or naturally worked into a bullet point. Do not just paraphrase a keyword into a synonym; ATS systems match literal keyword text.
+   - Do NOT add a keyword for a skill the candidate has no evidence of — that would violate the fact rule above. Skipping an unearned keyword is correct behavior, not a failure.
+   - The Skills section should be reordered so keywords that also appear in the Job Description come first.
 
-    CRITICAL DESIGN & JSON FORMATTING RULES:
+    JSON FORMATTING RULES:
     1. Return ONLY a valid JSON object with a single field "html".
     2. CRITICAL ERROR PREVENTION: The value of the "html" key must be a plain, standard JSON string wrapper. NEVER use triple quotes like \"\"\" or backticks (\`\`\`) inside or around the HTML content. Escape double quotes as \\" where needed inside the HTML string.
-    3. The HTML must use a clean, executive look with strict A4 dimensions (@page { size: A4; margin: 0; } and page dimensions 210mm x 297mm).
-    4. Use a single professional accent color (like deep navy blue #1e3a8a) for section headers and lines. Use premium charcoal colors (#0f172a, #334155) for text.
-    5. Ensure the visual hierarchy is perfectly spaced so it prints on a single, clean page without breaking.`;
+    3. The HTML must fit on a single A4 page (210mm x 297mm) without overflow or breaking to a second page.
+    4. Use clean, semantic HTML with your own inline or embedded CSS styling — keep it professional and readable, well-organized into clear sections (Header, Summary, Skills, Experience, Projects, Education, Languages), omitting any section with no real content.
+    5. Page and body background MUST be white (#ffffff) or a very light neutral color. NEVER use a black, dark, or colored full-page background — this is a printed resume, not a dark-mode UI.
+    6. NEVER write the two literal characters backslash-n (as in \\n) as visible text content anywhere in the HTML, and never insert stray newline characters between tags purely for formatting. Whitespace between elements must come from real HTML/CSS (margin, padding, <br> if truly needed) — not from escape-sequence text nodes. Every "\\n" you might be tempted to add for readability of the JSON string must instead just be a plain space or nothing.
+    7. SKILLS SECTION FORMATTING: a comma immediately after each skill (except the last one) is MANDATORY — e.g. "HTML5, CSS3, JavaScript (ES6+), React.js" — this comma must be present even if you also style skills as pill/chip spans with background and border-radius. Extra whitespace or a larger gap between words is NOT a substitute for a comma and does NOT satisfy this rule. Skills must never appear as "HTML5   CSS3   JavaScript" (space-only separation) under any circumstance — always literally type the comma character.
+       Example of a CORRECT skills line: <p>HTML5, CSS3, JavaScript (ES6+), React.js, React Router, SCSS/Sass, Flexbox, CSS Grid, Git &amp; GitHub</p>
+       Example of an INCORRECT skills line (never do this): <p>HTML5   CSS3   JavaScript (ES6+)   React.js</p>
+    8. COLOR SCHEME (mandatory, use exactly this):
+       - The candidate's name and every section title (Professional Summary, Technical Skills, Professional Experience, Education, Projects, etc.) must be colored light blue: #3b82f6.
+       - Every section title must have a bottom border in that same light blue: border-bottom: 1.5px solid #3b82f6; with a few pixels of padding-bottom so the line doesn't touch the text.
+       - Body text (paragraphs, bullet points, contact line, dates) stays in a normal dark/black or dark-gray color for readability — only the name and section titles use the light blue.`;
 
     const userPrompt = `Generate a competitive selection-based resume using this data. Tailor it exactly for the target Job Description:
     
@@ -168,7 +258,7 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
         ],
         response_format: { type: "json_object" },
         // Temperature thoda sa low kiya hai taaki strict formatting follow ho aur creativity ke chakkar me JSON na toote
-        temperature: 0.15 
+        temperature: 0.15
     });
 
     const jsonContent = JSON.parse(response.choices[0].message.content);
@@ -177,9 +267,16 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
         throw new Error("Groq API error: HTML field missing in response.");
     }
 
-    const pdfBuffer = await generatePdfFromHtml(jsonContent.html);
- 
+    // Safety net: even with the prompt rule above, models sometimes still leak
+    // literal "\n" (backslash + n, two visible characters) into text content.
+    // Strip those out so they never show up as visible text in the PDF.
+    const cleanedHtml = jsonContent.html.replace(/\\n/g, " ");
+
+    console.log("RESUME HTML:", cleanedHtml);
+
+    const pdfBuffer = await generatePdfFromHtml(cleanedHtml);
+
     return pdfBuffer;
-    
+
 }
 module.exports = { generateInterviewReport, generateResumePdf }
